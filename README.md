@@ -2,7 +2,7 @@
 
 Konsole OS is an advanced Android terminal OS environment, launcher, and professional toolkit combining a touch-friendly Fish terminal, Termux-compatible Linux userspace, Proot distro management, KeX X11 desktop, rootless packet capture, network/RF recon, USB-OTG serial bridge, and hardware-backed KeyStore vault.
 
-<img width="1536" height="1024" alt="Hunru Technologies Tech Branding Poster" src="https://github.com/user-attachments/assets/f84eea25-073b-4749-9a1d-7277369982ae" />
+<img width="1774" height="887" alt="Konsole OS Neon Terminal Banner" src="https://github.com/user-attachments/assets/15fb1747-d769-4edd-b63c-ad8d700dc5bc" />
 
 **Start here:** [Quickstart](#quickstart) · [Comparison Matrix](#konsole-os-vs-similar-projects) · [User Guide](docs/USER_GUIDE.md) · [Developer Guide](docs/DEVELOPER_GUIDE.md) · [Security](SECURITY.md) · [License](LICENSE.md)
 
