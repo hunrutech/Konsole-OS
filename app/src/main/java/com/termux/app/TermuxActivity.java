@@ -13,9 +13,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
-import android.provider.Settings;
 import java.util.ArrayList;
 import java.util.List;
 import android.view.ContextMenu;
@@ -159,6 +157,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
      * time, so if the session causing a change is not in the foreground it should probably be treated as background.
      */
     private boolean mIsVisible;
+    private boolean mKonsoleSharedStorageInitialized;
 
     /**
      * If onResume() was called after onCreate().
@@ -194,6 +193,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
     private static final int CONTEXT_MENU_HELP_ID = 7;
     private static final int CONTEXT_MENU_SETTINGS_ID = 8;
     private static final int CONTEXT_MENU_REPORT_ID = 9;
+    private static final int REQUEST_KONSOLE_PERMISSIONS = 1001;
 
     private static final String ARG_TERMINAL_TOOLBAR_TEXT_INPUT = "terminal_toolbar_text_input";
     private static final String ARG_ACTIVITY_RECREATED = "activity_recreated";
@@ -395,6 +395,7 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         if (mIsInvalidState) return;
 
         com.termux.app.konsole.KonsoleFishBridge.getInstance().setActiveActivity(this);
+        initializeKonsoleSharedStorageIfGranted();
 
         if (mTermuxTerminalSessionActivityClient != null)
             mTermuxTerminalSessionActivityClient.onResume();
@@ -898,6 +899,8 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
             perms.add(android.Manifest.permission.CALL_PHONE);
             perms.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
             perms.add(android.Manifest.permission.CAMERA);
+            perms.add(android.Manifest.permission.READ_EXTERNAL_STORAGE);
+            perms.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
             perms.add(android.Manifest.permission.CHANGE_WIFI_STATE);
             perms.add(android.Manifest.permission.ACCESS_WIFI_STATE);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -914,16 +917,9 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
                 }
             }
             if (!missing.isEmpty()) {
-                requestPermissions(missing.toArray(new String[0]), 1001);
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (!Environment.isExternalStorageManager()) {
-                    try {
-                        Intent i = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-                        i.setData(Uri.parse("package:" + getPackageName()));
-                        startActivity(i);
-                    } catch (Exception ignored) {}
-                }
+                requestPermissions(missing.toArray(new String[0]), REQUEST_KONSOLE_PERMISSIONS);
+            } else {
+                initializeKonsoleSharedStorageIfGranted();
             }
         }
     }
@@ -1086,28 +1082,40 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
      * if targeting targetSdkVersion 30 (android 11) and running on sdk 30 (android 11) and higher.
      */
     public void requestStoragePermission(boolean isPermissionCallback) {
-        new Thread() {
-            @Override
-            public void run() {
-                // Do not ask for permission again
-                int requestCode = isPermissionCallback ? -1 : PermissionUtils.REQUEST_GRANT_STORAGE_PERMISSION;
-
-                // If permission is granted, then also setup storage symlinks.
-                if(PermissionUtils.checkAndRequestLegacyOrManageExternalStoragePermission(
-                    TermuxActivity.this, requestCode, !isPermissionCallback)) {
-                    if (isPermissionCallback)
-                        Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
-                            getString(com.termux.shared.R.string.msg_storage_permission_granted_on_request));
-
-                    com.termux.app.konsole.KonsoleConfigManager.getInstance().init(TermuxActivity.this);
-                    TermuxInstaller.setupStorageSymlinks(TermuxActivity.this);
-                } else {
-                    if (isPermissionCallback)
-                        Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
-                            getString(com.termux.shared.R.string.msg_storage_permission_not_granted_on_request));
+        runOnUiThread(() -> {
+            if (com.termux.app.konsole.KonsoleConfigManager.hasSharedStorageAccess(TermuxActivity.this)) {
+                initializeKonsoleSharedStorageIfGranted();
+                if (isPermissionCallback) {
+                    Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
+                        getString(com.termux.shared.R.string.msg_storage_permission_granted_on_request));
                 }
+                return;
             }
-        }.start();
+
+            int requestCode = isPermissionCallback ? -1 : PermissionUtils.REQUEST_GRANT_STORAGE_PERMISSION;
+            if (PermissionUtils.checkAndRequestLegacyOrManageExternalStoragePermission(
+                    TermuxActivity.this, requestCode, !isPermissionCallback)) {
+                initializeKonsoleSharedStorageIfGranted();
+            } else if (isPermissionCallback) {
+                Logger.logInfoAndShowToast(TermuxActivity.this, LOG_TAG,
+                    getString(com.termux.shared.R.string.msg_storage_permission_not_granted_on_request));
+            }
+        });
+    }
+
+    /** Initializes Konsole shared files and Termux storage links after storage access is granted. */
+    private void initializeKonsoleSharedStorageIfGranted() {
+        if (!com.termux.app.konsole.KonsoleConfigManager.hasSharedStorageAccess(this)) {
+            mKonsoleSharedStorageInitialized = false;
+            return;
+        }
+        if (mKonsoleSharedStorageInitialized) return;
+
+        com.termux.app.konsole.KonsoleConfigManager.getInstance().init(this);
+        TermuxInstaller.setupStorageSymlinks(this);
+        com.termux.app.konsole.KonsoleFishBridge.syncStateFiles(this);
+        mKonsoleSharedStorageInitialized = new java.io.File(
+            com.termux.app.konsole.KonsoleConfigManager.KONSOLE_ROOT_PATH).isDirectory();
     }
 
     @Override
@@ -1125,6 +1133,13 @@ public final class TermuxActivity extends AppCompatActivity implements ServiceCo
         Logger.logVerbose(LOG_TAG, "onRequestPermissionsResult: requestCode: " + requestCode + ", permissions: "  + Arrays.toString(permissions) + ", grantResults: "  + Arrays.toString(grantResults));
         if (requestCode == PermissionUtils.REQUEST_GRANT_STORAGE_PERMISSION) {
             requestStoragePermission(true);
+        } else if (requestCode == REQUEST_KONSOLE_PERMISSIONS) {
+            initializeKonsoleSharedStorageIfGranted();
+            if (!com.termux.app.konsole.KonsoleConfigManager.hasSharedStorageAccess(this)) {
+                Toast.makeText(this,
+                    "Shared storage access is required for /storage/emulated/0 and $konsole. Grant Files and media access in Android app permissions.",
+                    Toast.LENGTH_LONG).show();
+            }
         }
     }
 
