@@ -1,6 +1,7 @@
 # Konsole OS
 
 Konsole OS is an Android terminal application that combines a touch-friendly terminal, a Termux-compatible Linux userspace, and a launcher-style dashboard. It lets users run command-line tools on Android, manage terminal sessions, and reach shell and device utilities from one app.
+<img width="1536" height="1024" alt="Hunru Technologies Tech Branding Poster" src="https://github.com/user-attachments/assets/f84eea25-073b-4749-9a1d-7277369982ae" />
 
 **Start here:** [Quickstart](#quickstart) · [User Guide](docs/USER_GUIDE.md) · [Developer Guide](docs/DEVELOPER_GUIDE.md) · [Security](SECURITY.md) · [License](LICENSE.md)
 
