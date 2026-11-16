@@ -1,9 +1,11 @@
 package com.termux.app.konsole;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Environment;
 import android.util.Log;
 
+import com.termux.shared.android.PermissionUtils;
 import com.termux.shared.termux.TermuxConstants;
 
 import org.w3c.dom.Document;
@@ -58,10 +60,25 @@ public class KonsoleConfigManager {
         return sInstance;
     }
 
+    /** Returns whether this app process can read and write the shared external storage area. */
+    public static boolean hasSharedStorageAccess(Context context) {
+        if (context == null) return false;
+        if (PermissionUtils.checkStoragePermission(context,
+                PermissionUtils.isLegacyExternalStoragePossible(context))) {
+            return true;
+        }
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager();
+    }
+
     public void init(Context context) {
         try {
-            if (context != null) {
-                com.termux.shared.android.PermissionUtils.checkAndRequestLegacyOrManageExternalStoragePermission(context, -1, false);
+            if (context == null || !hasSharedStorageAccess(context)) {
+                Log.w(TAG, "Shared storage permission is not granted; deferring Konsole storage initialization");
+                return;
+            }
+            if (!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+                Log.w(TAG, "Primary shared storage is not mounted; deferring Konsole storage initialization");
+                return;
             }
             ensureDirectories();
             ensureDefaultXmlFiles();
@@ -92,8 +109,8 @@ public class KonsoleConfigManager {
         for (String path : dirs) {
             try {
                 File d = new File(path);
-                if (!d.exists()) {
-                    d.mkdirs();
+                if (!d.exists() && !d.mkdirs() && !d.isDirectory()) {
+                    Log.w(TAG, "Failed creating directory " + path + ": mkdirs returned false");
                 }
             } catch (Exception e) {
                 Log.w(TAG, "Failed creating directory " + path + ": " + e.getMessage());

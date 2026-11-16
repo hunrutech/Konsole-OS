@@ -1,148 +1,100 @@
 # Konsole OS
 
-<p align="center">
-  <img width="1774" height="887" alt="Konsole OS Neon Terminal Banner" src="https://github.com/user-attachments/assets/284fc074-4beb-4515-9fbc-1ed860b3198e" />
-</p>
+Konsole OS is an Android terminal application that combines a touch-friendly terminal, a Termux-compatible Linux userspace, and a launcher-style dashboard. It lets users run command-line tools on Android, manage terminal sessions, and reach shell and device utilities from one app.
 
-<p align="center">
-  <a href="https://github.com/termux/termux-app/actions"><img src="https://github.com/termux/termux-app/workflows/Build/badge.svg" alt="Build status" /></a>
-  <a href="https://github.com/termux/termux-app/actions"><img src="https://github.com/termux/termux-app/workflows/Unit%20tests/badge.svg" alt="Testing status" /></a>
-  <a href="https://gitter.im/termux/termux"><img src="https://badges.gitter.im/termux/termux.svg" alt="Join the chat at gitter.im/termux/termux" /></a>
-  <a href="https://discord.gg/HXpF69X"><img src="https://img.shields.io/discord/641256914684084234.svg?label=&logo=discord&logoColor=ffffff&color=5865F2" alt="Join the Termux discord server" /></a>
-  <a href="https://jitpack.io/#termux/termux-app"><img src="https://jitpack.io/v/termux/termux-app.svg" alt="Termux library releases at Jitpack" /></a>
-</p>
+**Start here:** [Quickstart](#quickstart) · [User Guide](docs/USER_GUIDE.md) · [Developer Guide](docs/DEVELOPER_GUIDE.md) · [Security](SECURITY.md) · [License](LICENSE.md)
 
-Konsole OS is an Android terminal application, launcher, and Linux environment designed for users who want a fast, flexible, and self-contained command-line experience on Android.
+## Table of contents
 
-This repository contains the app itself: the user interface, terminal emulation stack, Android integration, and shared platform components. It is designed around the Termux ecosystem and supports package-based Linux tooling through the broader Termux package infrastructure.
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Technology](#technology)
+- [Prerequisites](#prerequisites)
+- [Quickstart](#quickstart)
+- [Build configuration](#build-configuration)
+- [Documentation](#documentation)
+- [Related package sources](#related-package-sources)
+- [Contributing](#contributing)
 
-## Why Konsole OS?
+## Screenshots
 
-- Full-featured mobile terminal experience
-- Linux-like environment on Android devices
-- Launcher-style workflow for quick access to tools and sessions
-- Modular architecture for terminal rendering and app logic
-- Compatibility with Termux package management and Linux utilities
+The repository includes Android captures of the app's terminal, dashboard, app launcher, command palette, and macro workflow.
+
+| Terminal | System Dashboard |
+| --- | --- |
+| ![Konsole OS terminal with its HUD and terminal toolbar](public/assets/aistudio/screenshot_4_0efb16ea.png) | ![Konsole OS System Dashboard showing telemetry and terminal options](public/assets/aistudio/screenshot_6_bcb7aa97.png) |
+
+See the [User Guide screenshots](docs/USER_GUIDE.md#screenshots) for the app launcher, command palette, Macro Lab, and macro editor. These captures are illustrative; UI details can change between builds.
 
 ## Features
 
-- Advanced terminal emulation and input handling
-- Android app and launcher integration
-- Terminal session workflows and customization
-- Native performance components for emulator functionality
-- Shared platform libraries for Android and Termux compatibility
-- Reusable terminal libraries for app development
+- Run interactive shell sessions with terminal rendering, keyboard shortcuts, extra keys, and session management.
+- Install and run Linux command-line packages using the bundled Termux bootstrap and `apt`/`pkg` tooling.
+- Open the System Dashboard to inspect device telemetry and verified Termux paths, switch shell behavior, and adjust common terminal options.
+- Browse installed apps and use the command palette and Macro Lab for configured shortcuts and automation.
+- Integrate with Android file sharing, document picking, app shortcuts, notifications, and the Termux `RUN_COMMAND` service.
 
-## Project structure
+## Technology
 
-```text
-Konsole-OS/
-├── app/                     # Android application UI and runtime integration
-├── art/                     # Visual assets and branding resources
-├── docs/                    # Documentation and supporting references
-├── fastlane/                # Release and metadata automation
-├── gradle/                  # Gradle wrapper configuration
-├── site/                    # Website or project landing content
-├── terminal-emulator/       # Core terminal emulator implementation
-├── terminal-view/           # Terminal rendering and display module
-├── termux-shared/           # Shared logic and Termux-related utilities
-├── .github/                 # GitHub workflows and automation
-├── build.gradle             # Root Gradle configuration
-├── gradle.properties        # Project build settings
-├── settings.gradle          # Included modules
-├── gradlew                  # Gradle wrapper for Unix-like systems
-├── gradlew.bat              # Gradle wrapper for Windows
-├── LICENSE.md               # License terms
-├── README.md                # Project documentation
-├── SECURITY.md              # Security policy and reporting guidance
-├── fix-bug.md               # Bug-fix notes and maintenance documentation
-├── metadata.json            # Project metadata
-├── jitpack.yml              # JitPack build configuration
-├── .editorconfig            # Editor formatting configuration
-├── .gitattributes           # Git attributes
-├── .gitignore              # Ignore rules
-└── .github/
-```
+| Area | Implementation |
+| --- | --- |
+| Android application | Java, Android SDK, AndroidX, Material Components |
+| Build | Gradle 8.13.2 Android Gradle Plugin, Gradle wrapper |
+| Terminal | `terminal-emulator` and `terminal-view` Android library modules |
+| Shared platform code | `termux-shared` module |
+| Native code | C/C++ built with Android NDK/ndk-build |
+| Linux userspace | Termux bootstrap archives (default `apt-android-7`) |
+| Markdown UI | Markwon |
+| CI | GitHub Actions; unit tests run with JUnit and Robolectric |
 
-## Requirements
+The Android app has no server-side database. Terminal files and package state live in the app's private Android storage; Android preferences store app settings. Packages are obtained through configured Termux repositories from inside the app.
 
-- Android Studio (latest stable recommended)
-- Android SDK configured for the project build
-- NDK version: 29.0.14206865
-- Compile SDK: 36
-- Minimum SDK: 21
-- Java environment compatible with the project Gradle configuration
-- A physical device or emulator for testing
+## Prerequisites
 
-## Getting started
+- JDK 17 for the documented CI-compatible build environment.
+- Android SDK Platform 36 and Android build tools available to Gradle.
+- Android NDK `29.0.14206865` (declared in `gradle.properties`).
+- Android Studio is optional but useful for editing and running on an emulator/device.
 
-### Clone the repository
+The repository has no `.env.example`; build options are Gradle properties and optional environment variables described below.
+
+## Quickstart
 
 ```bash
 git clone https://github.com/hunter-zen-RU/Konsole-OS.git
 cd Konsole-OS
-```
-
-### Build the app
-
-```bash
 ./gradlew assembleDebug
 ```
 
-### Build a release version
+Gradle downloads the required bootstrap archives during the build and verifies their SHA-256 checksums. This step needs network access on the first build. Install the resulting `app/build/outputs/apk/debug/app-debug.apk` on an Android device or emulator, or open the project in Android Studio and run the `app` configuration.
+
+To run unit tests or build a release APK:
 
 ```bash
+./gradlew testDebugUnitTest
 ./gradlew assembleRelease
 ```
 
-You can also open the project directly in Android Studio and sync Gradle dependencies from there.
+Release signing can be configured with `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`. If no keystore is supplied, the Gradle configuration falls back to the repository's debug keystore settings; do not use that fallback for a production release.
 
-## Package ecosystem
+## Build configuration
 
-This repository contains the application itself, including the terminal interface and system integration.
+Project defaults are in `gradle.properties`: `minSdkVersion=21`, `targetSdkVersion=28`, `compileSdkVersion=36`, and `ndkVersion=29.0.14206865`. `TERMUX_PACKAGE_VARIANT` selects the bootstrap (`apt-android-7` by default; `apt-android-5` is also supported). Other build-time overrides used by the scripts include `TERMUX_APP_VERSION_NAME`, `TERMUX_APK_VERSION_TAG`, `TERMUX_SPLIT_APKS_FOR_DEBUG_BUILDS`, `TERMUX_SPLIT_APKS_FOR_RELEASE_BUILDS`, and `JITPACK_NDK_VERSION`.
 
-For packages installable inside the app, see:
+## Documentation
 
-- [termux/termux-packages](https://github.com/termux/termux-packages)
-- [Konsole-packages](https://github.com/hunter-zen-RU/Konsole-packages)
+- [User Guide](docs/USER_GUIDE.md): install/use the app, configure its dashboard and troubleshoot common issues.
+- [Developer Guide](docs/DEVELOPER_GUIDE.md): architecture, modules, build/test workflows, Android integration API, CI and contribution notes.
+- [Documentation home](docs/en/index.md): guide directory and visual reference links.
+- [Security policy](SECURITY.md)
+- [License](LICENSE.md)
 
-A quick introduction to package maintenance is available in the Termux package management documentation.
+## Related package sources
 
-## Important notes
-
-> Notice: Konsole OS may be unstable on Android 12+.
-
-On some devices, Android may terminate background or phantom processes beyond system limits, and this can affect terminal behavior or lifecycle stability.
+This repository contains the Android application and its terminal libraries, not the package recipes. See [Termux packages](https://github.com/termux/termux-packages) and [Konsole packages](https://github.com/hunter-zen-RU/Konsole-packages) for the package ecosystem used by the app.
 
 ## Contributing
 
-Contributions are welcome. To contribute:
+Contributions are welcome. Review the [Developer Guide](docs/DEVELOPER_GUIDE.md#contributing) and [security policy](SECURITY.md), make a focused change on a branch, run the relevant Gradle checks, and submit a pull request with a summary and verification notes.
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make focused changes with clear commit messages.
-4. Verify the relevant build or tests.
-5. Open a pull request with a concise summary.
-
-## Security
-
-Please read [SECURITY.md](SECURITY.md) for vulnerability reporting guidance and the security policy.
-
-## License
-
-This project is licensed under the repository’s license. See [LICENSE.md](LICENSE.md) for full details.
-
-## Maintainers
-
-We are currently looking for maintainers for the Konsole Android application.
-
-## Related projects
-
-- [Termux](https://github.com/termux/termux-app)
-- [Termux packages](https://github.com/termux/termux-packages)
-- [Konsole packages](https://github.com/hunter-zen-RU/Konsole-packages)
-- [storages 1 hunzen](https://hunterzen-ru.github.io/Konsole-package/packges.json)
-- [Storage 2 hun-zen](https://hunterzenru.github.io/Konsole-package/packges.json)
----
-
-Built for Android users who want a Linux-style terminal environment in a mobile-first, app-driven workflow.
+[Back to top](#konsole-os)
